@@ -1,7 +1,10 @@
 const jwt = require('jsonwebtoken');
-const maxAge = 3 * 60 * 60;
+const maxAge = '14m';
 const bcrypt = require('bcryptjs');
+const UserToken = require('../model/UserToken');
 const jwtSecret = '35a6fa48a3cf7f5a02a579e3799532664e5806d7d0c6db54c5fc4096e47dc9c0c59804' || process.env.SECRET;
+const jwtRefreshSectret = '35a6fa48a3cf7f5a02a579e3799532664e5806d7d0c6db54c5fc4096e47dc9c0c59805' || process.env.REFRESH_SECRET;
+
 /**
  * Function to return if hashed password is the same in db
  * @param password
@@ -20,34 +23,64 @@ const comparePasswords = async (password: string, passwordInDb: string): Promise
  */
 const createJwt =
   (exp = maxAge) =>
-  (user: any) => {
-    const token = jwt.sign({ user }, jwtSecret, {
+  (user: any, secret: string) => {
+    const token = jwt.sign({ user }, secret, {
       expiresIn: exp, // 3hrs in sec
     });
     return token;
   };
 
 /**
- *
- * @param res node response object
- * @param user user object to pass to jwt encryption
- */
-const setJwtCookie = (res: any, user: any) => {
-  const token = createJwtWithExp(user);
-  res.cookie('jwt', token, {
-    httpOnly: true,
-    maxAge: maxAge * 1000,
-  });
-};
-
-/**
  * pre-set function with expiry
  */
 const createJwtWithExp = createJwt();
 
+/**
+ *
+ * @param user
+ * @returns access token and refresh token
+ * create access token and refresh token in db
+ */
+export const generateAuthTokens = async (user: any): Promise<{ accessToken: string; refreshToken: string }> => {
+  const accessToken = createJwt()(user, jwtSecret);
+  const refreshToken = createJwt('30d')(user, jwtRefreshSectret);
+  const userToken = UserToken.findOne({ userId: user._id });
+  if (!!userToken) {
+    await userToken.remove();
+  }
+  await new UserToken({ userId: user._id, token: refreshToken }).save();
+  return Promise.resolve({ accessToken, refreshToken });
+};
+
+export const verifyRefreshToken = async (refreshToken: string): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    return UserToken.findOne({ token: refreshToken }, (err: any, token: any) => {
+      if (err) {
+        console.log('here');
+        return reject({ error: true, message: 'does not exist in db' });
+      }
+
+      if (!token) {
+        console.log('here');
+        return reject({ error: true, message: 'missing refresh token' });
+      }
+
+      jwt.verify(refreshToken, jwtRefreshSectret, (err: any, tokenDetails: any) => {
+        if (err) {
+          return reject({ error: true });
+        }
+        console.log('here');
+        return resolve({ error: false, message: 'valid', tokenDetails });
+      });
+    });
+  });
+};
+
 module.exports = {
   comparePasswords,
   createJwtWithExp,
-  setJwtCookie,
+  generateAuthTokens,
+  verifyRefreshToken,
   jwtSecret,
+  jwtRefreshSectret,
 };

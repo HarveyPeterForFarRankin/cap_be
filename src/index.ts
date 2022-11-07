@@ -9,7 +9,6 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/api/auth', require('./Auth/route'));
-app.get('/protected', userAuth, (req: any, res: any) => res.status(200).json({ message: 'success' }));
 
 connectDb();
 

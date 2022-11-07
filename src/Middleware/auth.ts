@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const { jwtSecret } = require('../Auth/helper');
 
 /**
- * Basic user auth middleware, decrpy jwt token to ensure it was hashed from the server
+ * Basic user auth middleware, decrypt jwt token to ensure it was hashed from the server
  */
 exports.userAuth = (req: any, res: any, next: any) => {
   const token = req.cookies.jwt;

@@ -1,7 +1,12 @@
+import { generateAuthTokens, verifyRefreshToken } from './helper';
+
 export {};
 const User = require('../model/User');
 const bcrypt = require('bcryptjs');
-const { setJwtCookie, comparePasswords } = require('./helper');
+const { comparePasswords } = require('./helper');
+const jwt = require('jsonwebtoken');
+const { jwtSecret } = require('./helper');
+const maxAge = 3 * 60 * 60;
 
 /**
  * route for users to register an accoutn
@@ -12,7 +17,7 @@ exports.register = async (req: any, res: any) => {
     return res.status(400).json({ message: 'Password less than 6 characters' });
   }
   try {
-    /**
+    /**x
      * encrypt password prior to storing in db
      */
     bcrypt.hash(password, 10).then(async (hash: any) => {
@@ -20,9 +25,20 @@ exports.register = async (req: any, res: any) => {
         username,
         password: hash,
       })
-        .then((user: any) => {
-          setJwtCookie(res, user);
+        .then(async (user: any) => {
+          const { accessToken, refreshToken } = await generateAuthTokens(user);
+          /**
+           * set http only refresh token
+           */
+          res.cookie('jwt', refreshToken, {
+            httpOnly: true,
+            maxAge: maxAge * 1000,
+          });
+          /**
+           * return access token
+           */
           res.status(200).json({
+            accessToken,
             message: 'User successfully created',
             user,
           });
@@ -61,11 +77,16 @@ exports.login = async (req: any, res: any) => {
        */
       const passwordMatch = await comparePasswords(password, user.password);
       if (passwordMatch) {
+        const { accessToken, refreshToken } = await generateAuthTokens(user);
         /**
-         * set jwt cookie for auth
+         * set http only refresh token
          */
-        setJwtCookie(res, user);
+        res.cookie('jwt', refreshToken, {
+          httpOnly: true,
+          maxAge: maxAge * 1000,
+        });
         return res.status(200).json({
+          accessToken,
           message: 'success',
           user,
         });
@@ -86,5 +107,30 @@ exports.login = async (req: any, res: any) => {
      * general error
      */
     res.status(400).json({ message: 'error', error: err.message });
+  }
+};
+
+exports.refresh = async (req: any, res: any) => {
+  const refreshToken = req.cookies.jwt;
+  if (!refreshToken) {
+    res.status(400).json({ message: 'missing refresh token' });
+  }
+  try {
+    const { tokenDetails, error, message } = await verifyRefreshToken(refreshToken);
+    if (error) {
+      res.status(400).json({ message });
+    }
+    /**
+     * Remove tokenDetails expiry
+     */
+    delete tokenDetails.exp;
+    const accessToken = jwt.sign(tokenDetails, jwtSecret, { expiresIn: '14m' });
+    res.status(200).json({
+      error: false,
+      accessToken,
+      message: 'Access token created successfully',
+    });
+  } catch (err) {
+    res.status(400).json(err);
   }
 };
