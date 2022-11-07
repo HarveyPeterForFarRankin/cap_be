@@ -1,7 +1,8 @@
 export {};
 const express = require('express');
-const router = express.Router();
 const { profile } = require('./profile');
+
+const router = express.Router();
 
 router.route('/details').get(profile);
 

@@ -1,9 +1,7 @@
 const jwt = require('jsonwebtoken');
-const maxAge = '14m';
 const bcrypt = require('bcryptjs');
 const UserToken = require('../Model/UserToken');
-const jwtSecret = '35a6fa48a3cf7f5a02a579e3799532664e5806d7d0c6db54c5fc4096e47dc9c0c59804' || process.env.SECRET;
-const jwtRefreshSectret = '35a6fa48a3cf7f5a02a579e3799532664e5806d7d0c6db54c5fc4096e47dc9c0c59805' || process.env.REFRESH_SECRET;
+const maxAge = '14m';
 
 /**
  * Function to return if hashed password is the same in db
@@ -23,7 +21,7 @@ const comparePasswords = async (password: string, passwordInDb: string): Promise
  */
 const createJwt =
   (exp = maxAge) =>
-  (user: any, secret: string) => {
+  (user: any, secret: string | undefined) => {
     const token = jwt.sign({ user }, secret, {
       expiresIn: exp, // 3hrs in sec
     });
@@ -42,8 +40,8 @@ const createJwtWithExp = createJwt();
  * create access token and create refresh token in db
  */
 export const generateAuthTokens = async (user: any): Promise<{ accessToken: string; refreshToken: string }> => {
-  const accessToken = createJwt()(user, jwtSecret);
-  const refreshToken = createJwt('30d')(user, jwtRefreshSectret);
+  const accessToken = createJwt()(user, process.env.JWT_SECRET_KEY);
+  const refreshToken = createJwt('30d')(user, process.env.REFRESH_SECRET_KEY);
   const userToken = UserToken.findOne({ userId: user._id });
   if (!!userToken) {
     await userToken.remove();
@@ -63,7 +61,7 @@ export const verifyRefreshToken = async (refreshToken: string): Promise<any> => 
         return reject({ error: true, message: 'missing refresh token' });
       }
 
-      jwt.verify(refreshToken, jwtRefreshSectret, (err: any, tokenDetails: any) => {
+      jwt.verify(refreshToken, process.env.REFRESH_SECRET_KEY, (err: any, tokenDetails: any) => {
         if (err) {
           return reject({ error: true });
         }
@@ -78,6 +76,4 @@ module.exports = {
   createJwtWithExp,
   generateAuthTokens,
   verifyRefreshToken,
-  jwtSecret,
-  jwtRefreshSectret,
 };

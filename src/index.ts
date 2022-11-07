@@ -1,9 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const connectDb = require('./db');
-const app = express();
-const PORT = process.env.PORT || 5000;
 const cookieParser = require('cookie-parser');
 const { userAuth } = require('./Middleware/auth');
+const app = express();
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(cookieParser());

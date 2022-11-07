@@ -1,10 +1,11 @@
 export {};
 const User = require('../Model/User');
+const UserToken = require('../Model/UserToken');
 const { signUpValidation, loginValidation } = require('../Serialisers/Auth/auth');
 const bcrypt = require('bcryptjs');
 const { comparePasswords, generateAuthTokens, verifyRefreshToken } = require('./helper');
 const jwt = require('jsonwebtoken');
-const { jwtSecret } = require('./helper');
+
 const maxAge = 3 * 60 * 60;
 
 /**
@@ -123,6 +124,23 @@ exports.login = async (req: any, res: any) => {
 };
 
 /**
+ * Logout User
+ */
+exports.logout = async (req: any, res: any) => {
+  try {
+    const token = req.cookies.jwt;
+    const userToken = await UserToken.findOne({ token: token });
+    if (!userToken) {
+      return res.status(200).json({ error: false, message: 'Logged Out Sucessfully' });
+    }
+    await userToken.remove();
+    res.status(200).json({ error: false, message: 'Logged Out Sucessfully' });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+/**
  * Refresh token
  */
 exports.refresh = async (req: any, res: any) => {
@@ -139,7 +157,7 @@ exports.refresh = async (req: any, res: any) => {
      * Remove tokenDetails expiry
      */
     delete tokenDetails.exp;
-    const accessToken = jwt.sign(tokenDetails, jwtSecret, { expiresIn: '14m' });
+    const accessToken = jwt.sign(tokenDetails, process.env.JWT_SECRET_KEY, { expiresIn: '14m' });
     res.status(200).json({
       error: false,
       accessToken,
