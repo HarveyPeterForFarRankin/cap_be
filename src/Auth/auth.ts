@@ -1,9 +1,8 @@
-import { generateAuthTokens, verifyRefreshToken } from './helper';
-
 export {};
-const User = require('../model/User');
+const User = require('../Model/User');
+const { signUpValidation, loginValidation } = require('../Serialisers/Auth/auth');
 const bcrypt = require('bcryptjs');
-const { comparePasswords } = require('./helper');
+const { comparePasswords, generateAuthTokens, verifyRefreshToken } = require('./helper');
 const jwt = require('jsonwebtoken');
 const { jwtSecret } = require('./helper');
 const maxAge = 3 * 60 * 60;
@@ -13,9 +12,17 @@ const maxAge = 3 * 60 * 60;
  */
 exports.register = async (req: any, res: any) => {
   const { username, password } = req.body;
-  if (password.length < 6) {
-    return res.status(400).json({ message: 'Password less than 6 characters' });
+  /**
+   * validate the signup data
+   */
+  const { error } = signUpValidation({ username, password });
+  if (error) {
+    return res.status(400).json({
+      error: true,
+      message: error.details[0].message,
+    });
   }
+
   try {
     /**x
      * encrypt password prior to storing in db
@@ -44,8 +51,7 @@ exports.register = async (req: any, res: any) => {
           });
         })
         .catch((err: any) => {
-          console.log(err);
-          res.status(401);
+          res.status(401).json({ message: 'error occurred' });
         });
     });
   } catch (err: any) {
@@ -62,13 +68,20 @@ exports.register = async (req: any, res: any) => {
 exports.login = async (req: any, res: any) => {
   try {
     const { username, password } = req.body;
-    const missingUsernamePassword = !username || !password;
+    /**
+     * validate login data
+     */
+
+    const { error } = loginValidation({ username, password });
     /**
      * return 400 if missing password or username
      */
-    if (missingUsernamePassword) {
-      return res.status(400).json({ error: 'failed to provide username or password' });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
+    /**
+     * Check for user
+     */
     const user = await User.findOne({ username });
     const userExists = !!user;
     if (userExists) {

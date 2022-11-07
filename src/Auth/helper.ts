@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const maxAge = '14m';
 const bcrypt = require('bcryptjs');
-const UserToken = require('../model/UserToken');
+const UserToken = require('../Model/UserToken');
 const jwtSecret = '35a6fa48a3cf7f5a02a579e3799532664e5806d7d0c6db54c5fc4096e47dc9c0c59804' || process.env.SECRET;
 const jwtRefreshSectret = '35a6fa48a3cf7f5a02a579e3799532664e5806d7d0c6db54c5fc4096e47dc9c0c59805' || process.env.REFRESH_SECRET;
 
