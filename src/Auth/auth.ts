@@ -8,12 +8,12 @@ const { jwtSecret } = require('./helper');
 const maxAge = 3 * 60 * 60;
 
 /**
- * route for users to register an accoutn
+ * Register user in the application
  */
 exports.register = async (req: any, res: any) => {
   const { username, password } = req.body;
   /**
-   * validate the signup data
+   * validate signup data
    */
   const { error } = signUpValidation({ username, password });
   if (error) {
@@ -63,7 +63,7 @@ exports.register = async (req: any, res: any) => {
 };
 
 /**
- * Basic login route
+ * Login route
  */
 exports.login = async (req: any, res: any) => {
   try {
@@ -71,7 +71,6 @@ exports.login = async (req: any, res: any) => {
     /**
      * validate login data
      */
-
     const { error } = loginValidation({ username, password });
     /**
      * return 400 if missing password or username
@@ -123,6 +122,9 @@ exports.login = async (req: any, res: any) => {
   }
 };
 
+/**
+ * Refresh token
+ */
 exports.refresh = async (req: any, res: any) => {
   const refreshToken = req.cookies.jwt;
   if (!refreshToken) {
