@@ -39,7 +39,7 @@ const createJwtWithExp = createJwt();
  *
  * @param user
  * @returns access token and refresh token
- * create access token and refresh token in db
+ * create access token and create refresh token in db
  */
 export const generateAuthTokens = async (user: any): Promise<{ accessToken: string; refreshToken: string }> => {
   const accessToken = createJwt()(user, jwtSecret);
@@ -56,12 +56,10 @@ export const verifyRefreshToken = async (refreshToken: string): Promise<any> => 
   return new Promise((resolve, reject) => {
     return UserToken.findOne({ token: refreshToken }, (err: any, token: any) => {
       if (err) {
-        console.log('here');
         return reject({ error: true, message: 'does not exist in db' });
       }
 
       if (!token) {
-        console.log('here');
         return reject({ error: true, message: 'missing refresh token' });
       }
 
@@ -69,7 +67,6 @@ export const verifyRefreshToken = async (refreshToken: string): Promise<any> => 
         if (err) {
           return reject({ error: true });
         }
-        console.log('here');
         return resolve({ error: false, message: 'valid', tokenDetails });
       });
     });

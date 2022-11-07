@@ -13,7 +13,7 @@ const maxAge = 3 * 60 * 60;
 exports.register = async (req: any, res: any) => {
   const { username, password } = req.body;
   /**
-   * validate signup data
+   * Validate signup data
    */
   const { error } = signUpValidation({ username, password });
   if (error) {
@@ -69,7 +69,7 @@ exports.login = async (req: any, res: any) => {
   try {
     const { username, password } = req.body;
     /**
-     * validate login data
+     * Validate login data
      */
     const { error } = loginValidation({ username, password });
     /**
