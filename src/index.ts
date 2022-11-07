@@ -9,6 +9,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/api/auth', require('./Auth/route'));
+app.use('/api/profile', userAuth, require('./Profile/route'));
 
 connectDb();
 
