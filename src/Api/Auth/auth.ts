@@ -1,10 +1,10 @@
 export {};
-const User = require('../Model/User');
-const UserToken = require('../Model/UserToken');
-const { signUpValidation, loginValidation } = require('../Serialisers/Auth/auth');
-const bcrypt = require('bcryptjs');
-const { comparePasswords, generateAuthTokens, verifyRefreshToken } = require('./helper');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const User = require('../../Model/User');
+const UserToken = require('../../Model/UserToken');
+const { signUpValidation, loginValidation } = require('../../Serialisers/Auth/auth');
+const { comparePasswords, generateAuthTokens, verifyRefreshToken } = require('./helper');
 
 const maxAge = 3 * 60 * 60;
 
@@ -52,7 +52,7 @@ exports.register = async (req: any, res: any) => {
           });
         })
         .catch((err: any) => {
-          res.status(401).json({ message: 'error occurred' });
+          res.status(401).json({ message: err.message });
         });
     });
   } catch (err: any) {
@@ -161,7 +161,7 @@ exports.refresh = async (req: any, res: any) => {
     res.status(200).json({
       error: false,
       accessToken,
-      message: 'Access token created successfully',
+      message: 'Success',
     });
   } catch (err) {
     res.status(400).json(err);

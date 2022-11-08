@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const UserToken = require('../Model/UserToken');
+const UserToken = require('../../Model/UserToken');
 const maxAge = '14m';
 
 /**
@@ -23,7 +23,7 @@ const createJwt =
   (exp = maxAge) =>
   (user: any, secret: string | undefined) => {
     const token = jwt.sign({ user }, secret, {
-      expiresIn: exp, // 3hrs in sec
+      expiresIn: exp,
     });
     return token;
   };
@@ -54,7 +54,7 @@ export const verifyRefreshToken = async (refreshToken: string): Promise<any> => 
   return new Promise((resolve, reject) => {
     return UserToken.findOne({ token: refreshToken }, (err: any, token: any) => {
       if (err) {
-        return reject({ error: true, message: 'does not exist in db' });
+        return reject({ error: true, message: err.message });
       }
 
       if (!token) {
@@ -63,6 +63,10 @@ export const verifyRefreshToken = async (refreshToken: string): Promise<any> => 
 
       jwt.verify(refreshToken, process.env.REFRESH_SECRET_KEY, (err: any, tokenDetails: any) => {
         if (err) {
+          /**
+           * Cant verify - remove token from db
+           */
+          token.remove();
           return reject({ error: true });
         }
         return resolve({ error: false, message: 'valid', tokenDetails });

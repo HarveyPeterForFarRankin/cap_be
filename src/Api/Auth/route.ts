@@ -1,6 +1,6 @@
 export {};
 const express = require('express');
-const { register, login, refresh, logout } = require('./Auth');
+const { register, login, refresh, logout } = require('./auth');
 
 const router = express.Router();
 
