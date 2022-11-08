@@ -141,7 +141,7 @@ exports.logout = async (req: any, res: any) => {
 };
 
 /**
- * Refresh token
+ * Refresh token (THIS IS NOT WORKING CORRECTLY - IT IS RETURNING A EXPIRED ACCESS TOKEN FOR SOME REASON THAT IS UNKNOWN TO ME)
  */
 exports.refresh = async (req: any, res: any) => {
   const refreshToken = req.cookies.jwt;
@@ -154,7 +154,7 @@ exports.refresh = async (req: any, res: any) => {
       res.status(400).json({ message });
     }
     /**
-     * Remove tokenDetails expiry
+     * Remove tokenDetails expiry (This code smells - will update when i return better data to the frontend)
      */
     delete tokenDetails.exp;
     const accessToken = jwt.sign(tokenDetails, process.env.JWT_SECRET_KEY, { expiresIn: '14m' });
