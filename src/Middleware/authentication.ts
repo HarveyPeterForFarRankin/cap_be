@@ -10,7 +10,6 @@ exports.userAuthentication = (req: any, res: any, next: any) => {
     if (token) {
       jwt.verify(token, process.env.JWT_SECRET_KEY, (err: any, decodedToken: any) => {
         if (err) {
-          console.log(err);
           return res.status(401).json({ message: 'Not authorized' });
         } else {
           /**
