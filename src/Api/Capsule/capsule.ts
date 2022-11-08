@@ -14,7 +14,6 @@ exports.createCapsule = async (req: any, res: any) => {
    */
   try {
     const capsule = await Capsule.findOne({ admin: userId });
-    console.log(capsule);
     if (!!capsule) {
       return res.status(400).json({ message: 'capsule already owned by user' });
     }
@@ -24,6 +23,25 @@ exports.createCapsule = async (req: any, res: any) => {
       name,
     });
     res.status(200).json({ message: 'success', capsuleId: newCapule._id });
+  } catch (err: any) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+/**
+ * endpoint to get capsule for admin (to be changed)
+ */
+exports.getCapsule = async (req: any, res: any) => {
+  const { _id: userId } = req.user;
+  if (!userId) {
+    res.status(400).json({ message: 'missing user' });
+  }
+  try {
+    /**
+     * for now, only admins can get their capsules (1 -> 1)
+     */
+    const capsule = await Capsule.findOne({ admin: userId });
+    res.status(200).json({ capsule });
   } catch (err: any) {
     res.status(400).json({ message: err.message });
   }
