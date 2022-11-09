@@ -8,7 +8,6 @@ const { comparePasswords } = require('../../Api/Auth/helper');
  */
 exports.createCapsule = async (req: any, res: any) => {
   const { name, password } = req.body;
-  // validate properly here
   const { error } = createCapsuleValidation({ name, password });
   if (error) {
     return res.status(400).json({ message: error.details[0].message });
@@ -42,6 +41,7 @@ exports.createCapsule = async (req: any, res: any) => {
  */
 exports.getCapsule = async (req: any, res: any) => {
   const { _id: userId } = req.user;
+  //TODO: update this with validation
   if (!userId) {
     res.status(400).json({ message: 'Missing user' });
   }
@@ -63,7 +63,7 @@ exports.joinCapsule = async (req: any, res: any) => {
   const { _id: userId } = req.user;
   const { capsuleId, password } = req.body;
 
-  // validate data here
+  //TODO: validate data here
   if (!capsuleId) {
     return res.status(400).json({ message: 'Missing capsule' });
   }

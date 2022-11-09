@@ -5,58 +5,60 @@ const User = require('../../Model/User');
 const UserToken = require('../../Model/UserToken');
 const { signUpValidation, loginValidation } = require('../../Serialisers/Auth/auth');
 const { comparePasswords, generateAuthTokens, verifyRefreshToken } = require('./helper');
+const { error400, error401, success200 } = require('../../utils');
 
+//TODO: this needs to change
 const maxAge = 3 * 60 * 60;
 
 /**
  * Register user in the application
  */
 exports.register = async (req: any, res: any) => {
+  /**
+   * create response handlers
+   */
+  const response400 = error400(res);
+  const response401 = error401(res);
+  const response200 = success200(res);
+
   const { username, password } = req.body;
   /**
    * Validate signup data
    */
   const { error } = signUpValidation({ username, password });
   if (error) {
-    return res.status(400).json({
+    return response400({
       error: true,
       message: error.details[0].message,
     });
   }
-
   try {
     /**x
      * encrypt password prior to storing in db
      */
-    bcrypt.hash(password, 10).then(async (hash: any) => {
-      await User.create({
-        username,
-        password: hash,
-      })
-        .then(async (user: any) => {
-          const { accessToken, refreshToken } = await generateAuthTokens(user);
-          /**
-           * set http only refresh token
-           */
-          res.cookie('jwt', refreshToken, {
-            httpOnly: true,
-            maxAge: maxAge * 1000,
-          });
-          /**
-           * return access token
-           */
-          res.status(200).json({
-            accessToken,
-            message: 'User successfully created',
-            user,
-          });
-        })
-        .catch((err: any) => {
-          res.status(401).json({ message: err.message });
-        });
+    const hashPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, password: hashPassword });
+    const { accessToken, refreshToken } = await generateAuthTokens(user);
+    /**
+     * set http only refresh token
+     */
+    res.cookie('jwt', refreshToken, {
+      httpOnly: true,
+      maxAge: maxAge * 1000,
+    });
+    /**
+     * respond 200 to user
+     */
+    return response200({
+      accessToken,
+      message: 'User successfully created',
+      user,
     });
   } catch (err: any) {
-    res.status(401).json({
+    /**
+     * respond 401 upon any failure
+     */
+    return response401({
       message: 'User not successful created',
       error: err.message,
     });
@@ -67,6 +69,9 @@ exports.register = async (req: any, res: any) => {
  * Login route
  */
 exports.login = async (req: any, res: any) => {
+  const response200 = success200(res);
+  const response400 = error400(res);
+
   try {
     const { username, password } = req.body;
     /**
@@ -77,7 +82,7 @@ exports.login = async (req: any, res: any) => {
      * return 400 if missing password or username
      */
     if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+      return response400({ error: error.details[0].message });
     }
     /**
      * Check for user
@@ -98,7 +103,7 @@ exports.login = async (req: any, res: any) => {
           httpOnly: true,
           maxAge: maxAge * 1000,
         });
-        return res.status(200).json({
+        return response200({
           accessToken,
           message: 'success',
           user,
@@ -107,19 +112,19 @@ exports.login = async (req: any, res: any) => {
         /**
          * passwords dont match
          */
-        return res.status(400).json({ message: 'failed', error: 'error' });
+        return response400({ message: 'failed', error: 'error' });
       }
     } else {
       /**
        * user does not exist in db
        */
-      return res.status(400).json({ message: 'failed to fetch', error: 'error' });
+      return response400({ message: 'failed to fetch', error: 'error' });
     }
   } catch (err: any) {
     /**
      * general error
      */
-    res.status(400).json({ message: 'error', error: err.message });
+    return response400({ message: 'error', error: err.message });
   }
 };
 
@@ -127,43 +132,51 @@ exports.login = async (req: any, res: any) => {
  * Logout User
  */
 exports.logout = async (req: any, res: any) => {
+  const response200 = success200(res);
+  const response400 = error400(res);
+
   try {
     const token = req.cookies.jwt;
     const userToken = await UserToken.findOne({ token: token });
-    if (!userToken) {
-      return res.status(200).json({ error: false, message: 'Logged Out Sucessfully' });
+    if (userToken) {
+      /**
+       * remove refresh token in db
+       */
+      await userToken.remove();
     }
-    await userToken.remove();
-    res.status(200).json({ error: false, message: 'Logged Out Sucessfully' });
+    return response200({ error: false, message: 'Logged Out Sucessfully' });
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    return response400({ error: err.message });
   }
 };
 
 /**
- * Refresh token (THIS IS NOT WORKING CORRECTLY - IT IS RETURNING A EXPIRED ACCESS TOKEN FOR SOME REASON THAT IS UNKNOWN TO ME)
+ * TODO: Refresh token (THIS IS NOT WORKING CORRECTLY - IT IS RETURNING A EXPIRED ACCESS TOKEN FOR SOME REASON THAT IS UNKNOWN TO ME)
  */
 exports.refresh = async (req: any, res: any) => {
+  const response200 = success200(res);
+  const response400 = error400(res);
+
   const refreshToken = req.cookies.jwt;
   if (!refreshToken) {
-    res.status(400).json({ message: 'missing refresh token' });
+    return response400({ message: 'missing refresh token' });
   }
   try {
     const { tokenDetails, error, message } = await verifyRefreshToken(refreshToken);
     if (error) {
-      res.status(400).json({ message });
+      return response400({ message });
     }
     /**
      * Remove tokenDetails expiry (This code smells - will update when i return better data to the frontend)
      */
     delete tokenDetails.exp;
     const accessToken = jwt.sign(tokenDetails, process.env.JWT_SECRET_KEY, { expiresIn: '14m' });
-    res.status(200).json({
+    return response200({
       error: false,
       accessToken,
       message: 'Success',
     });
   } catch (err) {
-    res.status(400).json(err);
+    return response400({ err });
   }
 };

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
  * Basic user auth middleware, decrypt jwt token to ensure it was hashed from the server
  */
 exports.userAuthentication = (req: any, res: any, next: any) => {
+  //TODO: double check this is the correct header to use
   const token = req.headers['x-access-token'];
   try {
     if (token) {

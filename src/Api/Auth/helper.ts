@@ -29,11 +29,6 @@ const createJwt =
   };
 
 /**
- * pre-set function with expiry
- */
-const createJwtWithExp = createJwt();
-
-/**
  *
  * @param user
  * @returns access token and refresh token
@@ -77,7 +72,6 @@ export const verifyRefreshToken = async (refreshToken: string): Promise<any> => 
 
 module.exports = {
   comparePasswords,
-  createJwtWithExp,
   generateAuthTokens,
   verifyRefreshToken,
 };
