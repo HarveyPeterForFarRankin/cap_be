@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken');
 exports.userAuthentication = (req: any, res: any, next: any) => {
   //TODO: double check this is the correct header to use
   const token = req.headers['x-access-token'];
-  console.log(token);
   try {
     if (token) {
       jwt.verify(token, process.env.JWT_SECRET_KEY, (err: any, decodedToken: any) => {
@@ -17,7 +16,6 @@ exports.userAuthentication = (req: any, res: any, next: any) => {
           /**
            * remove password
            */
-          console.log(decodedToken);
           delete decodedToken.password;
           req.user = decodedToken.user;
           next();
