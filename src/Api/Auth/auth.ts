@@ -1,22 +1,20 @@
 export {};
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../../Model/User');
 const UserToken = require('../../Model/UserToken');
 const { signUpValidation, loginValidation } = require('../../Serialisers/Auth/auth');
-const { comparePasswords, generateAuthTokens, verifyRefreshToken } = require('./helper');
+const { comparePasswords, generateAuthTokens, verifyRefreshToken, createJwt } = require('./helper');
 const { error400, error401, success200 } = require('../../utils');
 
-//TODO: this needs to change
-const maxAge = 3 * 60 * 60;
+/**
+ * 14 mins in milliseconds
+ */
+const jwtExpiry = 840000;
 
 /**
  * Register user in the application
  */
 exports.register = async (req: any, res: any) => {
-  /**
-   * create response handlers
-   */
   const response400 = error400(res);
   const response401 = error401(res);
   const response200 = success200(res);
@@ -44,7 +42,7 @@ exports.register = async (req: any, res: any) => {
      */
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
-      maxAge: maxAge * 1000,
+      maxAge: jwtExpiry,
     });
     /**
      * respond 200 to user
@@ -101,7 +99,7 @@ exports.login = async (req: any, res: any) => {
          */
         res.cookie('jwt', refreshToken, {
           httpOnly: true,
-          maxAge: maxAge * 1000,
+          maxAge: jwtExpiry,
         });
         return response200({
           accessToken,
@@ -129,7 +127,7 @@ exports.login = async (req: any, res: any) => {
 };
 
 /**
- * Logout User
+ * Logout User (delete refresh token from dbq)
  */
 exports.logout = async (req: any, res: any) => {
   const response200 = success200(res);
@@ -151,7 +149,7 @@ exports.logout = async (req: any, res: any) => {
 };
 
 /**
- * TODO: Refresh token (THIS IS NOT WORKING CORRECTLY - IT IS RETURNING A EXPIRED ACCESS TOKEN FOR SOME REASON THAT IS UNKNOWN TO ME)
+ * Endpoint to refresh access token with refresh token
  */
 exports.refresh = async (req: any, res: any) => {
   const response200 = success200(res);
@@ -166,17 +164,15 @@ exports.refresh = async (req: any, res: any) => {
     if (error) {
       return response400({ message });
     }
-    /**
-     * Remove tokenDetails expiry (This code smells - will update when i return better data to the frontend)
-     */
-    delete tokenDetails.exp;
-    const accessToken = jwt.sign(tokenDetails, process.env.JWT_SECRET_KEY, { expiresIn: '14m' });
+
+    const { user } = tokenDetails;
+    const accessToken = createJwt()(user, process.env.JWT_SECRET_KEY);
     return response200({
       error: false,
       accessToken,
       message: 'Success',
     });
-  } catch (err) {
-    return response400({ err });
+  } catch (err: any) {
+    return response400({ message: err.message });
   }
 };

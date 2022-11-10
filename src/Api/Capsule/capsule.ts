@@ -1,16 +1,21 @@
+export {};
 const Capsule = require('../../Model/Capsule');
 const bcrypt = require('bcryptjs');
-const { createCapsuleValidation } = require('../../Serialisers/Capsule/capsule');
+const { createCapsuleValidation, joinCapsuleValidation, getCapsuleValidation } = require('../../Serialisers/Capsule/capsule');
 const { comparePasswords } = require('../../Api/Auth/helper');
+const { error400, success200 } = require('../../utils');
 
 /**
- * api to create capsule
+ * api to create capsule - can only create if user is not part of other capsule
  */
 exports.createCapsule = async (req: any, res: any) => {
+  const response400 = error400(res);
+  const response200 = success200(res);
+
   const { name, password } = req.body;
   const { error } = createCapsuleValidation({ name, password });
   if (error) {
-    return res.status(400).json({ message: error.details[0].message });
+    return response400({ message: error.details[0].message });
   }
 
   const { _id: userId } = req.user;
@@ -19,20 +24,16 @@ exports.createCapsule = async (req: any, res: any) => {
    */
   try {
     bcrypt.hash(password, 10).then(async (hash: string) => {
-      const capsule = await Capsule.findOne({ admin: userId });
-      if (!!capsule) {
-        return res.status(400).json({ message: 'capsule already owned by user' });
-      }
       const newCapule = await Capsule.create({
         admin: userId,
         users: [userId],
         name,
         password: hash,
       });
-      res.status(200).json({ message: 'success', capsuleId: newCapule._id, password });
+      return response200({ message: 'success', capsuleId: newCapule._id, password });
     });
   } catch (err: any) {
-    res.status(400).json({ message: err.message });
+    return response400({ message: err.message });
   }
 };
 
@@ -40,19 +41,23 @@ exports.createCapsule = async (req: any, res: any) => {
  * endpoint to get capsule for admin (to be changed)
  */
 exports.getCapsule = async (req: any, res: any) => {
+  const response400 = error400(res);
+  const response200 = success200(res);
+
   const { _id: userId } = req.user;
-  //TODO: update this with validation
-  if (!userId) {
-    res.status(400).json({ message: 'Missing user' });
+
+  const { error } = getCapsuleValidation({ userId });
+  if (error) {
+    return response400({ message: error.details[0].message });
   }
   try {
     /**
-     * for now, only admins can get their capsules (1 -> 1)
+     * user can get the capsule they are part of
      */
-    const capsule = await Capsule.findOne({ admin: userId });
-    res.status(200).json({ capsule });
+    const capsule = await Capsule.findOne({ users: userId });
+    return response200({ capsule });
   } catch (err: any) {
-    res.status(400).json({ message: err.message });
+    return response400({ message: err.message });
   }
 };
 
@@ -60,31 +65,38 @@ exports.getCapsule = async (req: any, res: any) => {
  * Basic endpoint for user to join capsule with id and password
  */
 exports.joinCapsule = async (req: any, res: any) => {
-  const { _id: userId } = req.user;
-  const { capsuleId, password } = req.body;
+  const response400 = error400(res);
+  const response200 = success200(res);
 
-  //TODO: validate data here
-  if (!capsuleId) {
-    return res.status(400).json({ message: 'Missing capsule' });
-  }
+  const { _id: userId } = req.user;
+  const { capsule: capsuleId } = req.query;
+  const { password } = req.body;
   try {
+    const { error } = joinCapsuleValidation({ capsuleId, userId, password });
+
+    if (error) {
+      return response400({
+        message: error.details[0].message,
+      });
+    }
+
     const capsule = await Capsule.findOne({ _id: capsuleId });
     if (!capsule) {
-      return res.status(400).json({ message: 'error occcured, capsule does not exist' });
+      return response400({ message: 'error occcured, capsule does not exist' });
     }
     /**
      * compare capsule password with one supplied by the user
      */
     const passwordMatch = await comparePasswords(password, capsule.password);
     if (!passwordMatch) {
-      return res.status(400).json({ message: 'password is incorrect' });
+      return response400({ message: 'password is incorrect' });
     }
     /**
      * Add user to the requestToJoin array
      */
     await Capsule.findOneAndUpdate({ _id: capsuleId }, { $push: { requestsToJoin: userId } });
-    return res.status(200).json({ message: 'success' });
+    return response200({ message: 'success' });
   } catch (err: any) {
-    return res.status(400).json({ message: err.message });
+    return response400({ message: err.message });
   }
 };

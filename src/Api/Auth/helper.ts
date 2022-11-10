@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const UserToken = require('../../Model/UserToken');
-const maxAge = '14m';
 
 /**
  * Function to return if hashed password is the same in db
@@ -20,7 +19,7 @@ const comparePasswords = async (password: string, passwordInDb: string): Promise
  * @returns jwt token
  */
 const createJwt =
-  (exp = maxAge) =>
+  (exp = '14m') =>
   (user: any, secret: string | undefined) => {
     const token = jwt.sign({ user }, secret, {
       expiresIn: exp,
@@ -74,4 +73,5 @@ module.exports = {
   comparePasswords,
   generateAuthTokens,
   verifyRefreshToken,
+  createJwt,
 };
