@@ -127,7 +127,7 @@ exports.login = async (req: any, res: any) => {
 };
 
 /**
- * Logout User (delete refresh token from dbq)
+ * Logout User (delete refresh token from db)
  */
 exports.logout = async (req: any, res: any) => {
   const response200 = success200(res);

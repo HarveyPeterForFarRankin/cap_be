@@ -1,10 +1,10 @@
 const Mongoose = require('mongoose');
 
 const connectDB = async () => {
-  await Mongoose.connect(process.env.DB_URL, {
+  // change to env variable
+  await Mongoose.connect(`mongodb://mongo:27017/Capsule`, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
-  console.log('MongoDB Connected');
 };
 module.exports = connectDB;
